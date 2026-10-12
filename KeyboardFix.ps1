@@ -383,7 +383,7 @@ function Set-UiLanguage {
 
 function Update-Views {
     $script:LvProfile.Items.Clear(); $script:LvLive.Items.Clear()
-    $tag = $script:TagBox.Text.Trim()
+    $tag = $script:Target
     $prof = @(Get-ProfileLayouts)
     $live = @(Get-LiveLayouts)
     $pre = @(Get-Preload)
@@ -409,14 +409,11 @@ function Update-Views {
 
 function Invoke-Scan {
     Write-Log (T 's_scanning') 'info'
-    # auto-fill the field with the detected phantom (but keep a value the user typed by hand)
     $ph = @(Get-Phantoms)
-    if (-not $script:TagBox.Text.Trim() -or $script:TagBox.Text -eq $script:AutoTag) {
-        $script:AutoTag = if ($ph) { $ph[0].Culture } else { '' }
-        $script:TagBox.Text = $script:AutoTag
-    }
+    $script:Target = if ($ph) { $ph[0].Culture } else { '' }
+    $script:TagBox.Text = if ($script:Target) { $script:Target } else { '—' }
     Update-Views
-    $found = Invoke-Diagnose $script:TagBox.Text.Trim()
+    $found = Invoke-Diagnose $script:Target
     foreach ($f in $found) { Write-Log $f.Text $f.Level }
     $bad = @($found | Where-Object Level -eq 'err').Count
     if ($bad) { Write-Log (T 's_problem') 'err' } else { Write-Log (T 's_clean') 'ok' }
@@ -445,6 +442,7 @@ function Show-Gui {
     $script:Lbl = New-Caption 22; $script:Lbl.Location = [Drawing.Point]::new(640, 14)
     $tb = New-Object Windows.Forms.TextBox
     $tb.Text = ''; $tb.Location = [Drawing.Point]::new(640, 36); $tb.Width = 120
+    $tb.ReadOnly = $true; $tb.TabStop = $false   # display only: filled in by the scan
     $tb.BackColor = $C.Panel; $tb.ForeColor = $C.Text; $tb.BorderStyle = 'FixedSingle'
     $script:TagBox = $tb
 
@@ -476,7 +474,7 @@ function Show-Gui {
 
     $script:BScan.Add_Click({ Invoke-Action { Invoke-Scan } })
     $script:BFix.Add_Click({ Invoke-Action {
-        $tag = $script:TagBox.Text.Trim()
+        $tag = $script:Target
         if (-not $tag) { Write-Log (T 'f_autonone') 'ok'; return }
         Write-Log (T 'f_fixing' @($tag)) 'info'
         Invoke-Fix $tag $true
