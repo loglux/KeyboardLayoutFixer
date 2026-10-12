@@ -490,7 +490,8 @@ function Show-Gui {
         Write-Log (T 'started') 'info'
         Invoke-Action { Invoke-Scan }
         if ($Screenshot) {
-            $script:Form.Activate(); Start-Sleep -Milliseconds 400; [Windows.Forms.Application]::DoEvents()
+            $script:Form.Activate(); $script:LvProfile.Refresh(); $script:LvLive.Refresh(); $script:Log.Refresh()
+            Start-Sleep -Milliseconds 600; [Windows.Forms.Application]::DoEvents()
             $bmp = New-Object Drawing.Bitmap($script:Form.Width, $script:Form.Height)
             $g = [Drawing.Graphics]::FromImage($bmp)
             $hdc = $g.GetHdc()

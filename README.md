@@ -34,6 +34,12 @@ $l.Remove(($l | Where-Object LanguageTag -like 'en-US')) # ...then remove it
 Set-WinUserLanguageList $l -Force
 ```
 
+**Before** — the scan finds en-US loaded in the session but missing from the profile:
+
+![Scan with a phantom en-US layout](docs/app-before-en.png)
+
+**After** — a clean session:
+
 ![After the fix](docs/app-after-en.png)
 
 ## Usage
