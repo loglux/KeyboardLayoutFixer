@@ -20,7 +20,7 @@ A layout that is loaded in the session but missing from the profile is a *phanto
 
 ## What the tool does
 
-- **Scan** — shows all three lists, flags the phantom in red (any language, not just en-US) and fills in its language tag.
+- **Scan** — shows all three lists, flags the phantom in red (any language, not just en-US) and shows it in the header, or a green *No phantom layouts* when the session is clean.
 - **Fix** — backs up your language list, temporarily adds the detected phantom language (usually `en-US`, but any language works) so Windows turns the phantom into a real entry, removes it, verifies the result (retrying if Windows re-adds an empty entry).
 - **Restore** — puts the language list back from the last backup (`backups\*.json`).
 - **RU / EN** — switches the interface language (default follows your Windows UI language).

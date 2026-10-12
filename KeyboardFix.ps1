@@ -49,7 +49,6 @@ $script:Lang = if ($Lang) { $Lang } elseif ((Get-UICulture).TwoLetterISOLanguage
 $script:S = @{
     ru = @{
         subtitle      = 'Лечит «прилипшую» раскладку-призрак (обычно en-US) в списке Win+Space'
-        target        = 'Язык-призрак:'
         btn_scan      = 'Сканировать'
         btn_fix       = 'Исправить'
         btn_restore   = '↩  Откатить'
@@ -98,7 +97,6 @@ $script:S = @{
     }
     en = @{
         subtitle      = 'Fixes the "stuck" phantom layout (usually en-US) in the Win+Space list'
-        target        = 'Phantom language:'
         btn_scan      = 'Scan'
         btn_fix       = 'Fix'
         btn_restore   = '↩  Restore'
@@ -370,7 +368,6 @@ function Write-Log([string]$Msg, [string]$Level = 'info') {
 # Re-applies all static texts for the current language
 function Set-UiLanguage {
     $script:Sub.Text = T 'subtitle'
-    $script:Lbl.Text = T 'target'
     $script:BScan.Text = T 'btn_scan'; $script:BFix.Text = T 'btn_fix'; $script:BRes.Text = T 'btn_restore'
     $script:BLang.Text = T 'btn_lang'
     $script:C1.Text = T 'cap_profile'; $script:C2.Text = T 'cap_live'; $script:C3.Text = T 'cap_log'
@@ -411,7 +408,6 @@ function Invoke-Scan {
     Write-Log (T 's_scanning') 'info'
     $ph = @(Get-Phantoms)
     $script:Target = if ($ph) { $ph[0].Culture } else { '' }
-    $script:TagBox.Text = if ($script:Target) { $script:Target } else { '—' }
     Update-Views
     $found = Invoke-Diagnose $script:Target
     foreach ($f in $found) { Write-Log $f.Text $f.Level }
@@ -439,16 +435,9 @@ function Show-Gui {
     $script:Sub = New-Object Windows.Forms.Label
     $script:Sub.Location = [Drawing.Point]::new(24, 48); $script:Sub.AutoSize = $true; $script:Sub.ForeColor = $C.Dim
 
-    $script:Lbl = New-Caption 22; $script:Lbl.Location = [Drawing.Point]::new(640, 14)
-    $tb = New-Object Windows.Forms.TextBox
-    $tb.Text = ''; $tb.Location = [Drawing.Point]::new(640, 36); $tb.Width = 120
-    $tb.ReadOnly = $true; $tb.TabStop = $false   # display only: filled in by the scan
-    $tb.BackColor = $C.Panel; $tb.ForeColor = $C.Text; $tb.BorderStyle = 'FixedSingle'
-    $script:TagBox = $tb
-
     $script:PhLbl = New-Object Windows.Forms.Label
-    $script:PhLbl.Location = [Drawing.Point]::new(640, 64); $script:PhLbl.AutoSize = $true
-    $script:PhLbl.Font = New-Object Drawing.Font('Segoe UI Semibold', 9.5); $script:PhLbl.ForeColor = $C.Dim
+    $script:PhLbl.Location = [Drawing.Point]::new(560, 30); $script:PhLbl.Size = [Drawing.Size]::new(250, 30); $script:PhLbl.TextAlign = 'MiddleRight'
+    $script:PhLbl.Font = New-Object Drawing.Font('Segoe UI Semibold', 11); $script:PhLbl.ForeColor = $C.Dim
 
     $script:BLang = New-Button 830 70 (New-Color '#475569'); $script:BLang.Location = [Drawing.Point]::new(830, 20); $script:BLang.Height = 30
 
@@ -493,7 +482,7 @@ function Show-Gui {
         Update-Views
     })
 
-    $f.Controls.AddRange(@($title, $script:Sub, $script:Lbl, $tb, $script:PhLbl, $script:BLang, $script:BScan, $script:BFix, $script:BRes,
+    $f.Controls.AddRange(@($title, $script:Sub, $script:PhLbl, $script:BLang, $script:BScan, $script:BFix, $script:BRes,
             $script:C1, $script:HdrProfile, $script:LvProfile, $script:C2, $script:HdrLive, $script:LvLive, $script:C3, $log, $st))
     Set-UiLanguage
 
