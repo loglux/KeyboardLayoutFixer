@@ -399,7 +399,7 @@ function Update-Views {
         if ($phantoms | Where-Object { $_.Klid -eq $l.Klid }) { $it.ForeColor = $C.Err }
         [void]$script:LvLive.Items.Add($it)
     }
-    if ($phantoms) { $script:PhLbl.Text = T 'st_found' @($phantoms[0].Culture); $script:PhLbl.ForeColor = $C.Err }
+    if ($phantoms) { $script:PhLbl.Text = T 'st_found' @((@($phantoms | ForEach-Object { $_.Culture } | Sort-Object -Unique)) -join ', '); $script:PhLbl.ForeColor = $C.Err }
     else { $script:PhLbl.Text = T 'st_none'; $script:PhLbl.ForeColor = $C.Ok }
     $script:Status.Text = T 'status' @($script:LvProfile.Items.Count, $live.Count, $pre.Count)
 }
@@ -407,7 +407,8 @@ function Update-Views {
 function Invoke-Scan {
     Write-Log (T 's_scanning') 'info'
     $ph = @(Get-Phantoms)
-    $script:Target = if ($ph) { $ph[0].Culture } else { '' }
+    $script:Targets = @($ph | ForEach-Object { $_.Culture } | Sort-Object -Unique)
+    $script:Target = if ($script:Targets) { $script:Targets[0] } else { '' }
     Update-Views
     $found = Invoke-Diagnose $script:Target
     foreach ($f in $found) { Write-Log $f.Text $f.Level }
@@ -463,10 +464,11 @@ function Show-Gui {
 
     $script:BScan.Add_Click({ Invoke-Action { Invoke-Scan } })
     $script:BFix.Add_Click({ Invoke-Action {
-        $tag = $script:Target
-        if (-not $tag) { Write-Log (T 'f_autonone') 'ok'; return }
-        Write-Log (T 'f_fixing' @($tag)) 'info'
-        Invoke-Fix $tag $true
+        if (-not $script:Targets) { Write-Log (T 'f_autonone') 'ok'; return }
+        foreach ($tag in $script:Targets) {   # every detected phantom in one go
+            Write-Log (T 'f_fixing' @($tag)) 'info'
+            Invoke-Fix $tag $true
+        }
         Invoke-Scan
     } })
     $script:BRes.Add_Click({ Invoke-Action {
