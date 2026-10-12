@@ -12,7 +12,7 @@
 .PARAMETER NoGui
     Console diagnostics only, no changes.
 .PARAMETER Fix
-    Console mode: scan, back up, fix the language given by -Tag (default en-US), scan again. Run in Windows PowerShell 5.1.
+    Console mode: scan, back up, fix phantom layouts (auto-detected, or the language given by -Tag), scan again. Run in Windows PowerShell 5.1.
 .PARAMETER Screenshot
     Scan, save a PNG of the window to the given path and exit (read-only; used for docs).
 #>
@@ -20,7 +20,7 @@ param(
     [ValidateSet('ru', 'en')][string]$Lang,
     [switch]$NoGui,
     [switch]$Fix,
-    [string]$Tag = 'en-US',
+    [string]$Tag,
     [string]$Screenshot
 )
 
@@ -48,8 +48,8 @@ $script:Lang = if ($Lang) { $Lang } elseif ((Get-UICulture).TwoLetterISOLanguage
 
 $script:S = @{
     ru = @{
-        subtitle      = 'Лечит «прилипшую» раскладку: призрак en-US в списке Win+Space'
-        target        = 'Проблемный язык:'
+        subtitle      = 'Лечит «прилипшую» раскладку-призрак (обычно en-US) в списке Win+Space'
+        target        = 'Язык-призрак:'
         btn_scan      = 'Сканировать'
         btn_fix       = 'Исправить'
         btn_restore   = '↩  Откатить'
@@ -83,7 +83,11 @@ $script:S = @{
         f_fail        = 'Не удалось убрать {0}. Удалите его вручную в Параметрах или перезайдите в систему.'
         f_fixing      = 'Исправляю {0} (цикл «добавить → удалить»)…'
         f_removing    = 'Удаляю {0} из профиля без цикла…'
-        s_scanning    = 'Сканирую раскладки (цель: {0})…'
+        s_scanning    = 'Сканирую раскладки…'
+        st_none       = '✔ Призраков нет'
+        st_found      = '✖ Призрак: {0}'
+        d_none        = 'Призрачных раскладок нет: всё, что загружено в сессии, есть в профиле.'
+        f_autonone    = 'Исправлять нечего: призраков нет.'
         s_problem     = 'Найдена проблема. Нажмите «Исправить».'
         s_clean       = 'Критичных проблем не найдено.'
         r_none        = 'Бэкапов пока нет.'
@@ -93,8 +97,8 @@ $script:S = @{
         started       = 'Keyboard Layout Fixer запущен. Бэкап создаётся перед каждым изменением.'
     }
     en = @{
-        subtitle      = 'Fixes the "stuck" layout: a phantom en-US in the Win+Space list'
-        target        = 'Problem language:'
+        subtitle      = 'Fixes the "stuck" phantom layout (usually en-US) in the Win+Space list'
+        target        = 'Phantom language:'
         btn_scan      = 'Scan'
         btn_fix       = 'Fix'
         btn_restore   = '↩  Restore'
@@ -128,7 +132,11 @@ $script:S = @{
         f_fail        = 'Could not remove {0}. Remove it manually in Settings or sign out and back in.'
         f_fixing      = 'Fixing {0} (add → remove cycle)…'
         f_removing    = 'Removing {0} from the profile (no cycle)…'
-        s_scanning    = 'Scanning layouts (target: {0})…'
+        s_scanning    = 'Scanning layouts…'
+        st_none       = '✔ No phantom layouts'
+        st_found      = '✖ Phantom: {0}'
+        d_none        = 'No phantom layouts: everything loaded in the session is in the profile.'
+        f_autonone    = 'Nothing to fix: no phantom layouts.'
         s_problem     = 'Problem found. Press "Fix".'
         s_clean       = 'No critical problems found.'
         r_none        = 'No backups yet.'
@@ -199,6 +207,12 @@ function Get-LiveLayouts {
     }
 }
 
+# Phantom = layout loaded in the session whose KLID is not in the profile language list
+function Get-Phantoms($Prof = @(Get-ProfileLayouts), $Live = @(Get-LiveLayouts)) {
+    $known = @($Prof | Where-Object Klid | ForEach-Object { $_.Klid.ToUpper() })
+    $Live | Where-Object { $_.Klid -and ($known -notcontains $_.Klid.ToUpper()) }
+}
+
 function Get-Preload {
     $p = Get-ItemProperty 'HKCU:\Keyboard Layout\Preload' -ErrorAction SilentlyContinue
     if (-not $p) { return @() }
@@ -234,8 +248,6 @@ function Restore-Backup([string]$File) {
 function Invoke-Diagnose([string]$Tag) {
     $res = New-Object System.Collections.Generic.List[object]
     $add = { param($l, $t) $res.Add([pscustomobject]@{ Level = $l; Text = $t }) }
-    $lang = Get-LangId $Tag
-    $langHex = '{0:X4}' -f $lang
 
     $prof = @(Get-ProfileLayouts)
     $live = @(Get-LiveLayouts)
@@ -243,19 +255,16 @@ function Invoke-Diagnose([string]$Tag) {
 
     & $add 'info' (T 'd_summary' @($prof.Count, $live.Count, $pre.Count))
 
-    $inProfile = @($prof | Where-Object Tag -like "$Tag*")
-    if ($inProfile) { & $add 'warn' (T 'd_inprofile' @($Tag, ($inProfile.Layout -join ', '))) }
-    else { & $add 'ok' (T 'd_notinprof' @($Tag)) }
+    $phantoms = @(Get-Phantoms $prof $live)
+    if ($phantoms) { foreach ($p in $phantoms) { & $add 'err' (T 'd_ghost' @($p.Culture, $p.Layout)) } }
+    else { & $add 'ok' (T 'd_none') }
 
-    $ghost = @($live | Where-Object { $_.LangId -eq $lang })
-    if ($ghost -and -not $inProfile) { & $add 'err' (T 'd_ghost' @($Tag, ($ghost.Layout -join ', '))) }
-    elseif ($ghost) { & $add 'warn' (T 'd_loaded' @($Tag)) }
-    else { & $add 'ok' (T 'd_notloaded' @($Tag)) }
+    if ($Tag) {
+        $inProfile = @($prof | Where-Object Tag -like "$Tag*")
+        if ($inProfile) { & $add 'warn' (T 'd_inprofile' @($Tag, ($inProfile.Layout -join ', '))) }
+    }
 
-    $preHit = @($pre | Where-Object { $_.EndsWith($langHex) })
-    if ($preHit) { & $add 'warn' (T 'd_preloadhas' @(($preHit -join ', '))) }
-
-    # Desync: profile layout missing from Preload, or Preload entry missing from the profile
+    # FYI only: profile layout missing from Preload, or Preload entry missing from the profile
     foreach ($p in $prof | Where-Object Klid) {
         if ($pre -notcontains $p.Klid.ToUpper()) { & $add 'info' (T 'd_desync_a' @($p.Layout, $p.Klid)) }
     }
@@ -374,28 +383,38 @@ function Set-UiLanguage {
 
 function Update-Views {
     $script:LvProfile.Items.Clear(); $script:LvLive.Items.Clear()
-    $tagLang = '{0:X4}' -f (Get-LangId $script:TagBox.Text.Trim())
-
-    foreach ($p in Get-ProfileLayouts) {
-        $it = New-Object Windows.Forms.ListViewItem($p.Tag)
-        [void]$it.SubItems.Add($p.Language); [void]$it.SubItems.Add($p.Layout); [void]$it.SubItems.Add($p.Tip)
-        if ($p.Tag -like ($script:TagBox.Text.Trim() + '*')) { $it.ForeColor = $C.Warn }
-        [void]$script:LvProfile.Items.Add($it)
-    }
+    $tag = $script:TagBox.Text.Trim()
+    $prof = @(Get-ProfileLayouts)
     $live = @(Get-LiveLayouts)
     $pre = @(Get-Preload)
+    $phantoms = @(Get-Phantoms $prof $live)
+
+    foreach ($p in $prof) {
+        $it = New-Object Windows.Forms.ListViewItem($p.Tag)
+        [void]$it.SubItems.Add($p.Language); [void]$it.SubItems.Add($p.Layout); [void]$it.SubItems.Add($p.Tip)
+        if ($tag -and $p.Tag -like "$tag*") { $it.ForeColor = $C.Warn }
+        [void]$script:LvProfile.Items.Add($it)
+    }
     foreach ($l in $live) {
         $it = New-Object Windows.Forms.ListViewItem($l.Culture)
         [void]$it.SubItems.Add($l.Layout); [void]$it.SubItems.Add($l.Klid)
         [void]$it.SubItems.Add($(if ($pre -contains $l.Klid) { T 'yes' } else { T 'no' }))
-        if ('{0:X4}' -f $l.LangId -eq $tagLang) { $it.ForeColor = $C.Err }
+        if ($phantoms | Where-Object { $_.Klid -eq $l.Klid }) { $it.ForeColor = $C.Err }
         [void]$script:LvLive.Items.Add($it)
     }
+    if ($phantoms) { $script:PhLbl.Text = T 'st_found' @($phantoms[0].Culture); $script:PhLbl.ForeColor = $C.Err }
+    else { $script:PhLbl.Text = T 'st_none'; $script:PhLbl.ForeColor = $C.Ok }
     $script:Status.Text = T 'status' @($script:LvProfile.Items.Count, $live.Count, $pre.Count)
 }
 
 function Invoke-Scan {
-    Write-Log (T 's_scanning' @($script:TagBox.Text.Trim())) 'info'
+    Write-Log (T 's_scanning') 'info'
+    # auto-fill the field with the detected phantom (but keep a value the user typed by hand)
+    $ph = @(Get-Phantoms)
+    if (-not $script:TagBox.Text.Trim() -or $script:TagBox.Text -eq $script:AutoTag) {
+        $script:AutoTag = if ($ph) { $ph[0].Culture } else { '' }
+        $script:TagBox.Text = $script:AutoTag
+    }
     Update-Views
     $found = Invoke-Diagnose $script:TagBox.Text.Trim()
     foreach ($f in $found) { Write-Log $f.Text $f.Level }
@@ -425,9 +444,13 @@ function Show-Gui {
 
     $script:Lbl = New-Caption 22; $script:Lbl.Location = [Drawing.Point]::new(640, 14)
     $tb = New-Object Windows.Forms.TextBox
-    $tb.Text = 'en-US'; $tb.Location = [Drawing.Point]::new(640, 36); $tb.Width = 120
+    $tb.Text = ''; $tb.Location = [Drawing.Point]::new(640, 36); $tb.Width = 120
     $tb.BackColor = $C.Panel; $tb.ForeColor = $C.Text; $tb.BorderStyle = 'FixedSingle'
     $script:TagBox = $tb
+
+    $script:PhLbl = New-Object Windows.Forms.Label
+    $script:PhLbl.Location = [Drawing.Point]::new(640, 64); $script:PhLbl.AutoSize = $true
+    $script:PhLbl.Font = New-Object Drawing.Font('Segoe UI Semibold', 9.5); $script:PhLbl.ForeColor = $C.Dim
 
     $script:BLang = New-Button 830 70 (New-Color '#475569'); $script:BLang.Location = [Drawing.Point]::new(830, 20); $script:BLang.Height = 30
 
@@ -454,6 +477,7 @@ function Show-Gui {
     $script:BScan.Add_Click({ Invoke-Action { Invoke-Scan } })
     $script:BFix.Add_Click({ Invoke-Action {
         $tag = $script:TagBox.Text.Trim()
+        if (-not $tag) { Write-Log (T 'f_autonone') 'ok'; return }
         Write-Log (T 'f_fixing' @($tag)) 'info'
         Invoke-Fix $tag $true
         Invoke-Scan
@@ -471,7 +495,7 @@ function Show-Gui {
         Update-Views
     })
 
-    $f.Controls.AddRange(@($title, $script:Sub, $script:Lbl, $tb, $script:BLang, $script:BScan, $script:BFix, $script:BRes,
+    $f.Controls.AddRange(@($title, $script:Sub, $script:Lbl, $tb, $script:PhLbl, $script:BLang, $script:BScan, $script:BFix, $script:BRes,
             $script:C1, $script:HdrProfile, $script:LvProfile, $script:C2, $script:HdrLive, $script:LvLive, $script:C3, $log, $st))
     Set-UiLanguage
 
@@ -494,14 +518,18 @@ function Show-Gui {
 
 if ($Fix) {
     foreach ($f in Invoke-Diagnose $Tag) { Write-Log $f.Text $f.Level }
-    Write-Log (T 'f_fixing' @($Tag)) 'info'
-    Invoke-Fix $Tag $true
-    foreach ($f in Invoke-Diagnose $Tag) { Write-Log $f.Text $f.Level }
+    $targets = if ($Tag) { @($Tag) } else { @(Get-Phantoms | ForEach-Object { $_.Culture } | Sort-Object -Unique) }
+    if (-not $targets) { Write-Log (T 'f_autonone') 'ok' }
+    foreach ($t in $targets) {
+        Write-Log (T 'f_fixing' @($t)) 'info'
+        Invoke-Fix $t $true
+    }
+    if ($targets) { foreach ($f in Invoke-Diagnose $Tag) { Write-Log $f.Text $f.Level } }
 } elseif ($NoGui) {
     'PROFILE'; Get-ProfileLayouts | Format-Table -AutoSize | Out-String
     'LIVE'; Get-LiveLayouts | Format-Table -AutoSize | Out-String
     'PRELOAD'; Get-Preload
-    'DIAG'; Invoke-Diagnose 'en-US' | ForEach-Object { '[{0}] {1}' -f $_.Level, $_.Text }
+    'DIAG'; Invoke-Diagnose '' | ForEach-Object { '[{0}] {1}' -f $_.Level, $_.Text }
 } else {
     Show-Gui
 }

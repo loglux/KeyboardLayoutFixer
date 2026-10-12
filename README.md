@@ -20,8 +20,8 @@ A layout that is loaded in the session but missing from the profile is a *phanto
 
 ## What the tool does
 
-- **Scan** — shows all three lists and flags the phantom in red.
-- **Fix** — backs up your language list, temporarily adds the problem language (default `en-US`) so Windows turns the phantom into a real entry, removes it, verifies the result (retrying if Windows re-adds an empty entry).
+- **Scan** — shows all three lists, flags the phantom in red (any language, not just en-US) and fills in its language tag.
+- **Fix** — backs up your language list, temporarily adds the detected phantom language (usually `en-US`, but any language works) so Windows turns the phantom into a real entry, removes it, verifies the result (retrying if Windows re-adds an empty entry).
 - **Restore** — puts the language list back from the last backup (`backups\*.json`).
 - **RU / EN** — switches the interface language (default follows your Windows UI language).
 
@@ -48,7 +48,8 @@ Command-line options:
 ```powershell
 .\KeyboardFix.ps1 -Lang en            # force UI language (ru | en)
 .\KeyboardFix.ps1 -NoGui              # read-only diagnostics in the console
-.\KeyboardFix.ps1 -Fix -Tag en-US     # console mode: scan, back up, fix, scan again
+.\KeyboardFix.ps1 -Fix               # console mode: scan, back up, fix detected phantoms, scan again
+.\KeyboardFix.ps1 -Fix -Tag de-DE     # ...or force a specific language
 .\KeyboardFix.ps1 -Screenshot out.png # scan and save a PNG of the window (used for docs)
 ```
 
