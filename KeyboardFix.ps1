@@ -39,6 +39,46 @@ Add-Type -Namespace Kbd -Name Native -MemberDefinition @'
 [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hwnd, IntPtr hdc, uint flags);
 '@
 
+# What Win+Space actually lists: enabled TSF keyboard-layout profiles (documented ITfInputProcessorProfileMgr)
+Add-Type -TypeDefinition @'
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Threading;
+namespace Kbd {
+public static class Tsf {
+    [StructLayout(LayoutKind.Sequential)]
+    struct Profile { public uint ProfileType; public ushort LangId; public Guid Clsid; public Guid GuidProfile; public Guid Catid; public IntPtr HklSubstitute; public uint Caps; public IntPtr Hkl; public uint Flags; }
+    [ComImport, Guid("71C6E74D-0F28-11D8-A82A-00065B84435C"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IEnumProfiles { void Clone(out IEnumProfiles e); [PreserveSig] int Next(uint count, out Profile p, out uint fetched); void Reset(); void Skip(uint count); }
+    [ComImport, Guid("71C6E74C-0F28-11D8-A82A-00065B84435C"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IProfileMgr {
+        void ActivateProfile(uint type, ushort lang, ref Guid clsid, ref Guid profile, IntPtr hkl, uint flags);
+        void DeactivateProfile(uint type, ushort lang, ref Guid clsid, ref Guid profile, IntPtr hkl, uint flags);
+        void GetProfile(uint type, ushort lang, ref Guid clsid, ref Guid profile, IntPtr hkl, out Profile p);
+        void EnumProfiles(ushort lang, out IEnumProfiles e);
+    }
+    // HKLs of the enabled keyboard-layout profiles; null when TSF can't be queried
+    public static long[] EnabledHkls() {
+        long[] res = null;
+        var th = new Thread(() => {
+            try {
+                var type = Type.GetTypeFromCLSID(new Guid("33C53A50-F456-4884-B049-85FD643ECFED"));
+                var mgr = (IProfileMgr)Activator.CreateInstance(type);
+                IEnumProfiles e; mgr.EnumProfiles(0, out e);
+                var l = new List<long>(); Profile p; uint n;
+                while (e.Next(1, out p, out n) == 0 && n == 1)
+                    if ((p.Flags & 2) != 0 && p.ProfileType == 2) l.Add(p.Hkl.ToInt64());
+                res = l.ToArray();
+            } catch { res = null; }
+        });
+        th.SetApartmentState(ApartmentState.STA); th.Start(); th.Join();
+        return res;
+    }
+}
+}
+'@
+
 $script:BackupDir = Join-Path $PSScriptRoot 'backups'
 $script:LayoutTable = $null
 
@@ -85,6 +125,7 @@ $script:S = @{
         s_scanning    = 'Сканирую раскладки…'
         st_none       = '✔ Призраков нет'
         st_found      = '✖ Призрак: {0}'
+        d_hidden      = 'Раскладка {0} ({1}) загружена в сессии, но Win+Space её не предлагает. Это не призрак, исчезнет после следующего входа в Windows.'
         d_none        = 'Призрачных раскладок нет: всё, что загружено в сессии, есть в профиле.'
         f_autonone    = 'Исправлять нечего: призраков нет.'
         s_problem     = 'Найдена проблема. Нажмите «Исправить».'
@@ -133,6 +174,7 @@ $script:S = @{
         s_scanning    = 'Scanning layouts…'
         st_none       = '✔ No phantom layouts'
         st_found      = '✖ Phantom: {0}'
+        d_hidden      = 'Layout {0} ({1}) is loaded in the session but Win+Space does not offer it. Not a phantom; it goes away at the next sign-in.'
         d_none        = 'No phantom layouts: everything loaded in the session is in the profile.'
         f_autonone    = 'Nothing to fix: no phantom layouts.'
         s_problem     = 'Problem found. Press "Fix".'
@@ -201,14 +243,21 @@ function Get-LiveLayouts {
         } elseif ($hi -eq $lang) { $klid = '0000{0:X4}' -f $lang }
         else { $klid = '{0:X4}{1:X4}' -f $hi, $lang }
         $cult = try { [Globalization.CultureInfo]::GetCultureInfo($lang).Name } catch { '?' }
-        [pscustomobject]@{ LangId = $lang; Culture = $cult; Klid = $klid; Layout = $(if ($klid) { Get-LayoutText $klid } else { T 'undetermined' }) }
+        [pscustomobject]@{ Hkl = $v; LangId = $lang; Culture = $cult; Klid = $klid; Layout = $(if ($klid) { Get-LayoutText $klid } else { T 'undetermined' }) }
     }
 }
 
-# Phantom = layout loaded in the session whose KLID is not in the profile language list
-function Get-Phantoms($Prof = @(Get-ProfileLayouts), $Live = @(Get-LiveLayouts)) {
+# Loaded in the session, but its KLID is not in the profile language list
+function Get-NotInProfile($Prof, $Live) {
     $known = @($Prof | Where-Object Klid | ForEach-Object { $_.Klid.ToUpper() })
     $Live | Where-Object { $_.Klid -and ($known -notcontains $_.Klid.ToUpper()) }
+}
+
+# Phantom = not in the profile AND offered by Win+Space. A layout that is merely loaded in the session
+# but not offered is harmless (gone at the next sign-in).
+function Get-Phantoms($Prof = @(Get-ProfileLayouts), $Live = @(Get-LiveLayouts)) {
+    $tsf = [Kbd.Tsf]::EnabledHkls()
+    Get-NotInProfile $Prof $Live | Where-Object { $null -eq $tsf -or ($tsf -contains $_.Hkl) }
 }
 
 function Get-Preload {
@@ -256,6 +305,7 @@ function Invoke-Diagnose([string]$Tag) {
     $phantoms = @(Get-Phantoms $prof $live)
     if ($phantoms) { foreach ($p in $phantoms) { & $add 'err' (T 'd_ghost' @($p.Culture, $p.Layout)) } }
     else { & $add 'ok' (T 'd_none') }
+    foreach ($h in @(Get-NotInProfile $prof $live | Where-Object { $phantoms.Hkl -notcontains $_.Hkl })) { & $add 'info' (T 'd_hidden' @($h.Culture, $h.Layout)) }
 
     if ($Tag) {
         $inProfile = @($prof | Where-Object Tag -like "$Tag*")
