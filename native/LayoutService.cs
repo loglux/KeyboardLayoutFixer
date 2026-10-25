@@ -115,24 +115,13 @@ internal sealed class LayoutService
                 .Select(n => (k.GetValue(n) as string ?? "").ToUpperInvariant()).ToList();
     }
 
-    /// <summary>Loaded in the session, but its KLID is not in the profile.</summary>
-    private static List<LiveLayout> NotInProfile(IEnumerable<ProfileLayout> profile, IEnumerable<LiveLayout> live)
+    /// <summary>Phantom = loaded in the session, but its KLID is not in the profile.</summary>
+    public static List<LiveLayout> FindPhantoms(IEnumerable<ProfileLayout> profile, IEnumerable<LiveLayout> live)
     {
         var known = profile.Where(p => p.Klid.Length > 0).Select(p => p.Klid.ToUpperInvariant()).ToHashSet();
         return live.Where(l => l.Klid.Length > 0 && !known.Contains(l.Klid)).ToList();
     }
 
-    /// <summary>Is the layout one of the keyboard profiles that Win+Space lists? (null TSF = unknown, assume yes)</summary>
-    private static bool InSwitcher(LiveLayout l, List<(int Lang, long Hkl, uint Type, uint Flags)>? tsf)
-        => tsf == null || tsf.Any(t => t.Lang == l.LangId && (int)(t.Hkl & 0xFFFF) == l.LangId
-                                        && (((t.Hkl >> 16) & 0xFFFF) is var hi && (hi == l.LangId || (hi & 0xF000) == 0xF000 || hi.ToString("X4") == l.Klid[..4])));
-
-    /// <summary>Phantom = loaded in the session, not in the profile, and actually offered by Win+Space.</summary>
-    public static List<LiveLayout> FindPhantoms(IEnumerable<ProfileLayout> profile, IEnumerable<LiveLayout> live)
-    {
-        var tsf = Tsf.Enabled();
-        return NotInProfile(profile, live).Where(l => InSwitcher(l, tsf)).ToList();
-    }
     public List<Finding> Diagnose()
     {
         var res = new List<Finding>();
@@ -146,8 +135,6 @@ internal sealed class LayoutService
             foreach (var p in ph) res.Add(new(Level.Err, Loc.T("d_ghost", p.Culture, p.Layout)));
         else
             res.Add(new(Level.Ok, Loc.T("d_none")));
-        foreach (var h in NotInProfile(prof, live).Except(ph))
-            res.Add(new(Level.Info, Loc.T("d_hidden", h.Culture, h.Layout)));
 
         foreach (var p in prof.Where(p => p.Klid.Length > 0))
             if (!pre.Contains(p.Klid.ToUpperInvariant()))
