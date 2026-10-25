@@ -4,3 +4,6 @@ docs/before-tray.png
 docs/after-tray.png
 docs/after-settings.png
 docs/app-before-ru.png
+
+bin/
+obj/

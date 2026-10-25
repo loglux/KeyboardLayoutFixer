@@ -42,7 +42,18 @@ Set-WinUserLanguageList $l -Force
 
 ![After the fix](docs/app-after-en.png)
 
-## Usage
+## Download
+
+Get a ready-made program from the [Releases page](https://github.com/loglux/KeyboardLayoutFixer/releases/latest) (Windows 10/11, 64-bit, no admin rights needed). Same window and same fix as the script, but no PowerShell involved:
+
+| File | Size | Needs |
+|---|---|---|
+| `KeyboardLayoutFixer-full.exe` | ~63 MB | nothing, runs anywhere |
+| `KeyboardLayoutFixer-light.exe` | ~0.2 MB | [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows offers to install it on first launch) |
+
+The EXE is not code-signed yet, so Windows SmartScreen may warn about an unknown publisher: click **More info → Run anyway**. The source is in [`native/`](native/), build it with `dotnet build -c Release`. Backups are stored in `%LOCALAPPDATA%\KeyboardLayoutFixer\backups`. It also has a console mode: `--scan`, `--fix`, `--restore`, `--lang ru|en`.
+
+## Usage (PowerShell script)
 
 1. Download `KeyboardFix.ps1` and `KeyboardFix.bat` into the same folder.
 2. Double-click `KeyboardFix.bat` (or run `powershell -STA -File KeyboardFix.ps1`).
@@ -69,7 +80,9 @@ Requirements: Windows 10/11, Windows PowerShell 5.1 (the script relaunches itsel
 
 Утилита показывает три списка (профиль, живая сессия, `Preload`), подсвечивает призрак красным и лечит его приёмом «добавить язык → применить → удалить → применить». Перед правкой делается резервная копия, кнопка **Откатить** возвращает её. Единственный язык не удаляется. Интерфейс переключается RU/EN.
 
-Запуск: положите `KeyboardFix.ps1` и `KeyboardFix.bat` в одну папку и запустите `KeyboardFix.bat` → **Сканировать** → **Исправить**. Если раскладка осталась в списке, перезайдите в систему.
+**Готовая программа:** на странице [Releases](https://github.com/loglux/KeyboardLayoutFixer/releases/latest) есть EXE без PowerShell: `-full` (63 МБ, ничего не требует) и `-light` (0,2 МБ, нужен .NET 8 Desktop Runtime). Подписи у EXE пока нет, поэтому SmartScreen может предупредить: «Подробнее → Выполнить в любом случае». Исходники в [`native/`](native/).
+
+Запуск скрипта: положите `KeyboardFix.ps1` и `KeyboardFix.bat` в одну папку и запустите `KeyboardFix.bat` → **Сканировать** → **Исправить**. Если раскладка осталась в списке, перезайдите в систему.
 
 ![Русский интерфейс](docs/app-after-ru.png)
 
