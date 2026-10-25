@@ -7,6 +7,7 @@ static string? Arg(string[] a, string name)
     return i >= 0 && i + 1 < a.Length ? a[i + 1] : null;
 }
 
+if (args.Contains("--tsf")) { Native.AttachConsole(-1); var e = Tsf.Enabled(); Console.WriteLine(e == null ? "TSF: unavailable" : string.Join(Environment.NewLine, e.Select(x => $"lang={x.Lang:X4} hkl={x.Hkl:X8} type={x.Type} flags={x.Flags}"))); return; }
 var lang = Arg(args, "--lang");
 if (lang is "ru" or "en") Loc.Lang = lang;
 
