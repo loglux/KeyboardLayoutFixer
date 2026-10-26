@@ -64,7 +64,7 @@ internal sealed class MainForm : Form
         _bScan.Click += async (_, _) => await RunAsync(() => { Scan(); return Task.CompletedTask; });
         _bFix.Click += async (_, _) => await RunAsync(FixAllAsync);
         _bRestore.Click += async (_, _) => await RunAsync(() => { RestoreLatest(); return Task.CompletedTask; });
-        _bLang.Click += (_, _) => { Loc.Lang = Loc.Lang == "ru" ? "en" : "ru"; ApplyLanguage(); UpdateViews(); };
+        _bLang.Click += (_, _) => { Loc.Next(); ApplyLanguage(); UpdateViews(); };
 
         Shown += async (_, _) =>
         {
@@ -161,7 +161,7 @@ internal sealed class MainForm : Form
     private void ApplyLanguage()
     {
         _sub.Text = Loc.T("subtitle");
-        _bScan.Text = Loc.T("btn_scan"); _bFix.Text = Loc.T("btn_fix"); _bRestore.Text = Loc.T("btn_restore"); _bLang.Text = Loc.T("btn_lang");
+        _bScan.Text = Loc.T("btn_scan"); _bFix.Text = Loc.T("btn_fix"); _bRestore.Text = Loc.T("btn_restore"); _bLang.Text = Loc.NextCode;
         _c1.Text = Loc.T("cap_profile"); _c2.Text = Loc.T("cap_live"); _c3.Text = Loc.T("cap_log");
         var p = new[] { "col_tag", "col_lang", "col_layout", "col_code" };
         var l = new[] { "col_culture", "col_layout", "", "col_inpreload" };

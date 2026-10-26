@@ -15,4 +15,10 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="lang/en.json" LogicalName="lang.en.json" />
+    <EmbeddedResource Include="lang/ru.json" LogicalName="lang.ru.json" />
+    <Content Include="lang/*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

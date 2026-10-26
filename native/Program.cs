@@ -8,7 +8,7 @@ static string? Arg(string[] a, string name)
 }
 
 var lang = Arg(args, "--lang");
-if (lang is "ru" or "en") Loc.Lang = lang;
+if (lang != null) Loc.Lang = lang.ToLowerInvariant();
 
 if (args.Contains("--scan") || args.Contains("--fix") || args.Contains("--restore") || Arg(args, "--fix-klid") != null)
 {
