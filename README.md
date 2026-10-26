@@ -23,7 +23,7 @@ A layout that is loaded in the session but missing from the profile is a *phanto
 - **Scan** — shows all three lists, flags the phantom in red (any language, not just en-US) and shows it in the header, or a green *No phantom layouts* when the session is clean.
 - **Fix** — backs up your language list, temporarily adds the detected phantom language (usually `en-US`, but any language works) so Windows turns the phantom into a real entry, removes it, verifies the result (retrying if Windows re-adds an empty entry).
 - **Restore** — puts the language list back from the last backup (`backups\*.json`).
-- **RU / EN** — switches the interface language (default follows your Windows UI language).
+- **Language button** — switches the interface language when more than one language is available (see [Translations](#translations)); the default follows your Windows UI language.
 
 It never removes your only language, and it only touches the **current user's** language list. It is the scripted version of this well-known workaround:
 
@@ -54,7 +54,7 @@ Get a ready-made program from the [Releases page](https://github.com/loglux/Keyb
 
 The EXE itself is English only; every other language, Russian included, is a file in the `lang` folder next to it (see [Translations](#translations)). Keep the folder next to the EXE to get the Russian interface.
 
-The EXE is not code-signed yet, so Windows SmartScreen may warn about an unknown publisher: click **More info → Run anyway**. The source is in [`native/`](native/), build it with `dotnet build -c Release`. Backups are stored in `%LOCALAPPDATA%\KeyboardLayoutFixer\backups`. It also has a console mode: `--scan`, `--fix`, `--restore`, `--lang ru|en`.
+The EXE is not code-signed yet, so Windows SmartScreen may warn about an unknown publisher: click **More info → Run anyway**. The source is in [`native/`](native/), build it with `dotnet build -c Release`. Backups are stored in `%LOCALAPPDATA%\KeyboardLayoutFixer\backups`. It also has a console mode: `--scan`, `--fix`, `--restore`, `--lang xx` (language code).
 
 ## Usage (PowerShell script)
 
@@ -66,7 +66,7 @@ The EXE is not code-signed yet, so Windows SmartScreen may warn about an unknown
 Command-line options:
 
 ```powershell
-.\KeyboardFix.ps1 -Lang en            # force UI language (ru | en)
+.\KeyboardFix.ps1 -Lang en            # force UI language (any code from the lang folder)
 .\KeyboardFix.ps1 -NoGui              # read-only diagnostics in the console
 .\KeyboardFix.ps1 -Fix               # console mode: scan, back up, fix detected phantoms, scan again
 .\KeyboardFix.ps1 -Fix -Tag de-DE     # ...or force a specific language
@@ -81,11 +81,11 @@ Requirements: Windows 10/11, Windows PowerShell 5.1 (the script relaunches itsel
 
 Небольшая утилита на PowerShell + WinForms, которая убирает «прилипшую» раскладку-призрак (обычно `en-US`): она есть в Win+Space и в языковой панели, но её нет в «Параметрах», и удалить её оттуда нельзя.
 
-Утилита показывает три списка (профиль, живая сессия, `Preload`), подсвечивает призрак красным и лечит его приёмом «добавить язык → применить → удалить → применить». Перед правкой делается резервная копия, кнопка **Откатить** возвращает её. Единственный язык не удаляется. Интерфейс переключается RU/EN.
+Утилита показывает три списка (профиль, живая сессия, `Preload`), подсвечивает призрак красным и лечит его приёмом «добавить язык → применить → удалить → применить». Перед правкой делается резервная копия, кнопка **Откатить** возвращает её. Единственный язык не удаляется. Язык интерфейса переключается кнопкой, если в папке `lang` есть больше одного языка (см. «Перевод»).
 
 **Готовая программа:** на странице [Releases](https://github.com/loglux/KeyboardLayoutFixer/releases/latest) есть архивы без PowerShell: `KeyboardLayoutFixer-full.zip` (58 МБ, ничего не требует) и `KeyboardLayoutFixer-light.zip` (0,1 МБ, нужен .NET 8 Desktop Runtime), в каждом EXE и папка `lang`. Сам EXE только на английском; русский и любой другой язык — это файл в папке `lang` рядом с ним. `KeyboardLayoutFixer-languages.zip` содержит только эту папку: `ru.json` и пустой шаблон `template.json`. Подписи у EXE пока нет, поэтому SmartScreen может предупредить: «Подробнее → Выполнить в любом случае». Исходники в [`native/`](native/).
 
-Запуск скрипта: положите `KeyboardFix.ps1` и `KeyboardFix.bat` в одну папку и запустите `KeyboardFix.bat` → **Сканировать** → **Исправить**. Если раскладка осталась в списке, перезайдите в систему.
+Запуск скрипта: положите `KeyboardFix.ps1`, `KeyboardFix.bat` и папку `lang` (для русского и других языков) в одну папку и запустите `KeyboardFix.bat` → **Сканировать** → **Исправить**. Если раскладка осталась в списке, перезайдите в систему.
 
 ![Русский интерфейс](docs/app-after-ru.png)
 
