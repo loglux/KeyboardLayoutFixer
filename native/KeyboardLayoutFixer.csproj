@@ -16,9 +16,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="lang/en.json" LogicalName="lang.en.json" />
-    <EmbeddedResource Include="lang/ru.json" LogicalName="lang.ru.json" />
-    <Content Include="lang/*.json" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="../lang/en.json" LogicalName="lang.en.json" />
+    <EmbeddedResource Include="../lang/ru.json" LogicalName="lang.ru.json" />
+    <Content Include="../lang/*.json" Link="lang/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

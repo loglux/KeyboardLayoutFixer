@@ -44,5 +44,13 @@
   "r_removed": "",
   "r_done": "",
   "error": "",
-  "started": ""
+  "started": "",
+  "d_inprofile": "",
+  "d_notinprof": "",
+  "d_loaded": "",
+  "d_notloaded": "",
+  "d_preloadhas": "",
+  "f_nothing": "",
+  "f_only": "",
+  "f_removing": ""
 }

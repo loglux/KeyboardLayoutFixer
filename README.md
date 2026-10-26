@@ -86,6 +86,14 @@ Requirements: Windows 10/11, Windows PowerShell 5.1 (the script relaunches itsel
 
 ![Русский интерфейс](docs/app-after-ru.png)
 
+## Translations
+
+English is built in; Russian ships as `lang/ru.json`. To add another language, copy `lang/template.json` to `lang/xx.json` (`xx` = language code, e.g. `de.json`), set `"_name"` to the language's own name and fill in the values. Empty values fall back to English, so a partial translation works. Put the `lang` folder next to `KeyboardFix.ps1` or next to the EXE, or send the file as a pull request. `--lang xx` (EXE) / `-Lang xx` (script) selects it; by default the Windows UI language is used.
+
+## Перевод
+
+Английский встроен, русский лежит в `lang/ru.json`. Чтобы добавить язык, скопируйте `lang/template.json` в `lang/xx.json` (`xx` — код языка, например `de.json`), впишите в `"_name"` название языка на нём самом и заполните значения. Пустые значения заменяются английскими, поэтому неполный перевод тоже работает. Папку `lang` положите рядом со скриптом или EXE либо пришлите файл pull request'ом.
+
 ## License
 
 [MIT](LICENSE)

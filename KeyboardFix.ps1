@@ -8,7 +8,7 @@
     session and the HKCU Preload entries, detects the mismatch and fixes it with the
     "add language -> apply -> remove -> apply" trick. A backup is made before every change.
 .PARAMETER Lang
-    UI language: ru or en. Default: taken from the Windows UI culture. Can be toggled in the window.
+    UI language code (en, ru, or any lang\xx.json). Default: the Windows UI culture. Can be switched in the window.
 .PARAMETER NoGui
     Console diagnostics only, no changes.
 .PARAMETER Fix
@@ -17,7 +17,7 @@
     Scan, save a PNG of the window to the given path and exit (read-only; used for docs).
 #>
 param(
-    [ValidateSet('ru', 'en')][string]$Lang,
+    [string]$Lang,
     [switch]$NoGui,
     [switch]$Fix,
     [string]$Tag,
@@ -44,57 +44,7 @@ $script:LayoutTable = $null
 
 # ------------------------------------------------------------------ i18n -----
 
-$script:Lang = if ($Lang) { $Lang } elseif ((Get-UICulture).TwoLetterISOLanguageName -eq 'ru') { 'ru' } else { 'en' }
-
 $script:S = @{
-    ru = @{
-        subtitle      = 'Лечит «прилипшую» раскладку-призрак (обычно en-US) в списке Win+Space'
-        btn_scan      = 'Сканировать'
-        btn_fix       = 'Исправить'
-        btn_restore   = '↩  Откатить'
-        btn_lang      = 'EN'
-        cap_profile   = 'ЯЗЫКИ ПРОФИЛЯ (Параметры → Время и язык)'
-        cap_live      = 'ЖИВЫЕ РАСКЛАДКИ СЕССИИ (то, что переключает Win+Space)'
-        cap_log       = 'ЖУРНАЛ'
-        col_tag       = 'Тег'; col_lang = 'Язык'; col_layout = 'Раскладка'; col_code = 'Код'
-        col_culture   = 'Культура'; col_inpreload = 'В Preload'
-        yes           = 'да'; no = 'нет'
-        status        = 'Языков в профиле: {0}   •   живых раскладок: {1}   •   Preload: {2}'
-        unknown       = '(неизвестная раскладка)'
-        nolayout      = '(без раскладки)'
-        undetermined  = '(не определена)'
-        d_summary     = 'Профиль: {0} раскладок, живых в сессии: {1}, записей Preload: {2}'
-        d_inprofile   = 'Язык {0} присутствует в профиле ({1}).'
-        d_notinprof   = 'Язык {0} в списке языков профиля отсутствует.'
-        d_ghost       = 'ПРИЗРАК: раскладка {0} ({1}) активна в сессии, хотя в списке языков её нет. Это и есть «прилипшая» раскладка.'
-        d_loaded      = 'Раскладка {0} загружена в сессии.'
-        d_notloaded   = 'В сессии раскладка {0} не загружена.'
-        d_preloadhas  = 'В HKCU\Keyboard Layout\Preload есть запись: {0}.'
-        d_desync_a    = 'К сведению: раскладка «{0}» ({1}) есть в профиле, но не записана в Preload. Это не призрак.'
-        d_desync_b    = 'К сведению: Preload содержит {0} («{1}»), а в профиле такой раскладки нет. Это не призрак.'
-        f_backup      = 'Бэкап сохранён: {0}'
-        f_step1       = 'Шаг 1/2: временно добавляю {0}, чтобы Windows пересобрала список…'
-        f_nothing     = 'Нечего удалять: {0} в списке нет.'
-        f_only        = 'Отказ: {0} — единственный язык, удалять нельзя.'
-        f_step2       = 'Шаг 2/2: удаляю {0} из профиля…'
-        f_done        = 'Готово: {0} убран, остальные языки сохранены.'
-        f_retry       = 'Windows вернула {0}, повторяю удаление (попытка {1})…'
-        f_fail        = 'Не удалось убрать {0}. Удалите его вручную в Параметрах или перезайдите в систему.'
-        f_fixing      = 'Исправляю {0} (цикл «добавить → удалить»)…'
-        f_removing    = 'Удаляю {0} из профиля без цикла…'
-        s_scanning    = 'Сканирую раскладки…'
-        st_none       = '✔ Призраков нет'
-        st_found      = '✖ Призрак: {0}'
-        d_none        = 'Призрачных раскладок нет: всё, что загружено в сессии, есть в профиле.'
-        f_autonone    = 'Исправлять нечего: призраков нет.'
-        s_problem     = 'Найдена проблема. Нажмите «Исправить».'
-        s_clean       = 'Критичных проблем не найдено.'
-        r_none        = 'Бэкапов пока нет.'
-        r_restoring   = 'Восстанавливаю из {0}…'
-        r_done        = 'Список языков восстановлен.'
-        error         = 'Ошибка: {0}'
-        started       = 'Keyboard Layout Fixer запущен. Бэкап создаётся перед каждым изменением.'
-    }
     en = @{
         subtitle      = 'Fixes the "stuck" phantom layout (usually en-US) in the Win+Space list'
         btn_scan      = 'Scan'
@@ -145,11 +95,29 @@ $script:S = @{
     }
 }
 
+# English is built in. Other languages are read from lang\*.json next to the script (lang\template.json is the blank to
+# fill in: copy it to xx.json, translate the values). An empty or missing value falls back to English.
+foreach ($file in Get-ChildItem (Join-Path $PSScriptRoot 'lang') -Filter '*.json' -ErrorAction SilentlyContinue) {
+    $code = $file.BaseName.ToLower()
+    if ($code -eq 'template') { continue }
+    try {
+        $tbl = @{}
+        ([IO.File]::ReadAllText($file.FullName) | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $tbl[$_.Name] = [string]$_.Value }
+        $script:S[$code] = $tbl
+    } catch { }   # a broken translation must not break the tool
+}
+$script:Langs = @($script:S.Keys | Sort-Object { if ($_ -eq 'en') { '' } else { $_ } })
+$script:Lang = if ($Lang -and $script:S.ContainsKey($Lang.ToLower())) { $Lang.ToLower() }
+               elseif ($script:S.ContainsKey((Get-UICulture).TwoLetterISOLanguageName)) { (Get-UICulture).TwoLetterISOLanguageName }
+               else { 'en' }
+function Get-NextLang { $script:Langs[([array]::IndexOf($script:Langs, $script:Lang) + 1) % $script:Langs.Count] }
+
 function T([string]$Key, [object[]]$Args2) {
     $s = $script:S[$script:Lang][$Key]
+    if (-not $s) { $s = $script:S['en'][$Key] }
+    if (-not $s) { $s = $Key }
     if ($Args2) { $s -f $Args2 } else { $s }
 }
-
 # ------------------------------------------------------------------ data -----
 
 function Get-LayoutTable {
@@ -369,7 +337,7 @@ function Write-Log([string]$Msg, [string]$Level = 'info') {
 function Set-UiLanguage {
     $script:Sub.Text = T 'subtitle'
     $script:BScan.Text = T 'btn_scan'; $script:BFix.Text = T 'btn_fix'; $script:BRes.Text = T 'btn_restore'
-    $script:BLang.Text = T 'btn_lang'
+    $script:BLang.Text = (Get-NextLang).ToUpper()
     $script:C1.Text = T 'cap_profile'; $script:C2.Text = T 'cap_live'; $script:C3.Text = T 'cap_log'
     $p = 'col_tag', 'col_lang', 'col_layout', 'col_code'; $l = 'col_culture', 'col_layout', 'col_klid', 'col_inpreload'
     for ($i = 0; $i -lt 4; $i++) {
@@ -479,7 +447,7 @@ function Show-Gui {
         Write-Log (T 'r_done') 'ok'
     } })
     $script:BLang.Add_Click({
-        $script:Lang = if ($script:Lang -eq 'ru') { 'en' } else { 'ru' }
+        $script:Lang = Get-NextLang
         Set-UiLanguage
         Update-Views
     })

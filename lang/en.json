@@ -44,5 +44,13 @@
   "r_removed": "Removed layout {0}.",
   "r_done": "Layout list restored (language order is not changed).",
   "error": "Error: {0}",
-  "started": "Keyboard Layout Fixer started. A backup is made before every change."
+  "started": "Keyboard Layout Fixer started. A backup is made before every change.",
+  "d_inprofile": "Language {0} is present in the profile ({1}).",
+  "d_notinprof": "Language {0} is not in the profile language list.",
+  "d_loaded": "Layout {0} is loaded in the session.",
+  "d_notloaded": "Layout {0} is not loaded in the session.",
+  "d_preloadhas": "HKCU\\Keyboard Layout\\Preload contains an entry: {0}.",
+  "f_nothing": "Nothing to remove: {0} is not in the list.",
+  "f_only": "Refused: {0} is the only language, it cannot be removed.",
+  "f_removing": "Removing {0} from the profile (no cycle)…"
 }
