@@ -2,7 +2,7 @@
 
 A small PowerShell + WinForms tool that removes the **phantom "stuck" keyboard layout** (typically `en-US`) that shows up in the Windows 10/11 language bar and in the **Win+Space** switcher, even though it isn't in Settings and can't be removed there.
 
-*Русская версия — ниже.*
+Documentation in other languages: [Русский](docs/README.ru.md)
 
 ![Win+Space switcher before the fix: a phantom English (United States)](docs/before-flyout.png)
 
@@ -77,25 +77,11 @@ Requirements: Windows 10/11, Windows PowerShell 5.1 (the script relaunches itsel
 
 > The scan may also print an *FYI* when a profile layout isn't listed in `Preload` (for example Russian *Typewriter* `00010419` vs `00000419`). That is not the phantom; the tool only reports it and never touches `Preload`.
 
-## Русская версия
-
-Небольшая утилита на PowerShell + WinForms, которая убирает «прилипшую» раскладку-призрак (обычно `en-US`): она есть в Win+Space и в языковой панели, но её нет в «Параметрах», и удалить её оттуда нельзя.
-
-Утилита показывает три списка (профиль, живая сессия, `Preload`), подсвечивает призрак красным и лечит его приёмом «добавить язык → применить → удалить → применить». Перед правкой делается резервная копия, кнопка **Откатить** возвращает её. Единственный язык не удаляется. Язык интерфейса переключается кнопкой, если в папке `lang` есть больше одного языка (см. «Перевод»).
-
-**Готовая программа:** на странице [Releases](https://github.com/loglux/KeyboardLayoutFixer/releases/latest) есть архивы без PowerShell: `KeyboardLayoutFixer-full.zip` (58 МБ, ничего не требует) и `KeyboardLayoutFixer-light.zip` (0,1 МБ, нужен .NET 8 Desktop Runtime), в каждом EXE и папка `lang`. Сам EXE только на английском; русский и любой другой язык — это файл в папке `lang` рядом с ним. `KeyboardLayoutFixer-languages.zip` содержит только эту папку: `ru.json` и пустой шаблон `template.json`. Подписи у EXE пока нет, поэтому SmartScreen может предупредить: «Подробнее → Выполнить в любом случае». Исходники в [`native/`](native/).
-
-Запуск скрипта: положите `KeyboardFix.ps1`, `KeyboardFix.bat` и папку `lang` (для русского и других языков) в одну папку и запустите `KeyboardFix.bat` → **Сканировать** → **Исправить**. Если раскладка осталась в списке, перезайдите в систему.
-
-![Русский интерфейс](docs/app-after-ru.png)
-
 ## Translations
 
 English is built in; Russian ships as `lang/ru.json`. To add another language, copy `lang/template.json` to `lang/xx.json` (`xx` = language code, e.g. `de.json`), set `"_name"` to the language's own name and fill in the values. Empty values fall back to English, so a partial translation works. Put the `lang` folder next to `KeyboardFix.ps1` or next to the EXE, or send the file as a pull request. `--lang xx` (EXE) / `-Lang xx` (script) selects it; by default the Windows UI language is used.
 
-## Перевод
-
-Английский встроен, русский лежит в `lang/ru.json`. Чтобы добавить язык, скопируйте `lang/template.json` в `lang/xx.json` (`xx` — код языка, например `de.json`), впишите в `"_name"` название языка на нём самом и заполните значения. Пустые значения заменяются английскими, поэтому неполный перевод тоже работает. Папку `lang` положите рядом со скриптом или EXE либо пришлите файл pull request'ом.
+This README stays in English. A translated README goes into its own file, `docs/README.xx.md` (for example `docs/README.ru.md`), with a link to it near the top of this page, so the main README does not grow with every language.
 
 ## License
 
