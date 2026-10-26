@@ -409,6 +409,7 @@ function Show-Gui {
     $script:PhLbl.Font = New-Object Drawing.Font('Segoe UI Semibold', 11); $script:PhLbl.ForeColor = $C.Dim
 
     $script:BLang = New-Button 830 70 (New-Color '#475569'); $script:BLang.Location = [Drawing.Point]::new(830, 20); $script:BLang.Height = 30
+    $script:BLang.Visible = $script:Langs.Count -gt 1   # nothing to switch to with a single language
 
     $script:BScan = New-Button 20 170 $C.Accent
     $script:BFix = New-Button 200 170 (New-Color '#16A34A')

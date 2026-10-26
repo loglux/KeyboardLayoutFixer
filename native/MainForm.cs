@@ -44,6 +44,7 @@ internal sealed class MainForm : Form
         _phLbl.Font = new Font("Segoe UI Semibold", 11f); _phLbl.ForeColor = Dim;
 
         _bLang = MakeButton(830, 20, 70, 30, "#475569");
+        _bLang.Visible = Loc.Languages.Count > 1;   // nothing to switch to with a single language
         _bScan = MakeButton(20, 74, 170, 40, "#4C8DFF");
         _bFix = MakeButton(200, 74, 170, 40, "#16A34A");
         _bRestore = MakeButton(380, 74, 150, 40, "#6D28D9");
