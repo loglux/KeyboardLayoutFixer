@@ -48,14 +48,17 @@ Get a ready-made program from the [Releases page](https://github.com/loglux/Keyb
 
 | File | Size | Needs |
 |---|---|---|
-| `KeyboardLayoutFixer-full.exe` | ~63 MB | nothing, runs anywhere |
-| `KeyboardLayoutFixer-light.exe` | ~0.2 MB | [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows offers to install it on first launch) |
+| `KeyboardLayoutFixer-full.zip` | ~58 MB | nothing, runs anywhere (EXE + `lang` folder) |
+| `KeyboardLayoutFixer-light.zip` | ~0.1 MB | [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows offers to install it on first launch) (EXE + `lang` folder) |
+| `KeyboardLayoutFixer-languages.zip` | few KB | only the `lang` folder: `ru.json` and the blank `template.json` for your own language |
+
+The EXE itself is English only; every other language, Russian included, is a file in the `lang` folder next to it (see [Translations](#translations)). Keep the folder next to the EXE to get the Russian interface.
 
 The EXE is not code-signed yet, so Windows SmartScreen may warn about an unknown publisher: click **More info → Run anyway**. The source is in [`native/`](native/), build it with `dotnet build -c Release`. Backups are stored in `%LOCALAPPDATA%\KeyboardLayoutFixer\backups`. It also has a console mode: `--scan`, `--fix`, `--restore`, `--lang ru|en`.
 
 ## Usage (PowerShell script)
 
-1. Download `KeyboardFix.ps1` and `KeyboardFix.bat` into the same folder.
+1. Download `KeyboardFix.ps1` and `KeyboardFix.bat` (and the `lang` folder for languages other than English) into the same folder.
 2. Double-click `KeyboardFix.bat` (or run `powershell -STA -File KeyboardFix.ps1`).
 3. Press **Scan**; if you see a red row, press **Fix**.
 4. If the layout is still in the Win+Space list, sign out and back in — layouts already loaded into a session can survive until the next logon.
@@ -80,7 +83,7 @@ Requirements: Windows 10/11, Windows PowerShell 5.1 (the script relaunches itsel
 
 Утилита показывает три списка (профиль, живая сессия, `Preload`), подсвечивает призрак красным и лечит его приёмом «добавить язык → применить → удалить → применить». Перед правкой делается резервная копия, кнопка **Откатить** возвращает её. Единственный язык не удаляется. Интерфейс переключается RU/EN.
 
-**Готовая программа:** на странице [Releases](https://github.com/loglux/KeyboardLayoutFixer/releases/latest) есть EXE без PowerShell: `-full` (63 МБ, ничего не требует) и `-light` (0,2 МБ, нужен .NET 8 Desktop Runtime). Подписи у EXE пока нет, поэтому SmartScreen может предупредить: «Подробнее → Выполнить в любом случае». Исходники в [`native/`](native/).
+**Готовая программа:** на странице [Releases](https://github.com/loglux/KeyboardLayoutFixer/releases/latest) есть архивы без PowerShell: `KeyboardLayoutFixer-full.zip` (58 МБ, ничего не требует) и `KeyboardLayoutFixer-light.zip` (0,1 МБ, нужен .NET 8 Desktop Runtime), в каждом EXE и папка `lang`. Сам EXE только на английском; русский и любой другой язык — это файл в папке `lang` рядом с ним. `KeyboardLayoutFixer-languages.zip` содержит только эту папку: `ru.json` и пустой шаблон `template.json`. Подписи у EXE пока нет, поэтому SmartScreen может предупредить: «Подробнее → Выполнить в любом случае». Исходники в [`native/`](native/).
 
 Запуск скрипта: положите `KeyboardFix.ps1` и `KeyboardFix.bat` в одну папку и запустите `KeyboardFix.bat` → **Сканировать** → **Исправить**. Если раскладка осталась в списке, перезайдите в систему.
 
